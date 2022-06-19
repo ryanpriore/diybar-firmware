@@ -13,3 +13,7 @@ Starting with 1.6.4, Arduino allows installation of third-party platform package
 - Start Arduino and open Preferences window.
 - Enter ```https://dl.espressif.com/dl/package_esp32_index.json``` into *Additional Board Manager URLs* field. You can add multiple URLs, separating them with commas.
 - Open Boards Manager from Tools > Board menu and install *esp32* platform (and don't forget to select your ESP32 board from Tools > Board menu after installation).
+
+ESP32 Board Pin out
+===================
+![ESP32 Board Pin out](https://github.com/diybar/firmware/blob/master/images/esp32_pinout.jpg)
