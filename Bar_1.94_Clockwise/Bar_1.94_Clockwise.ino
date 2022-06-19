@@ -20,29 +20,31 @@
    Included in the GitHub repository https://github.com/diybar/firmware/Libraries
 */
 
+String firmwareVersion = "1.94";
 const bool debug = true;
-const bool debugLoop = true;
-const bool distanceSentor = false;
+const bool debugLoop = false;
+const bool bluetooth = true;
+const bool serialConnectionEnable = true;
+bool distanceSentor = false;
+bool reverseMotors = false;
 const int numMotors = 9;
 const int maxMotorsRunning = 4;
 const int minGlassDistance = 780;
 const int blinkTimes = 10; //Number if blinks if there is no glass
 int fadeAmount = 10;    // how many points to fade the LED by
+String readValue;
 
 // use first channel of 16 channels (started from zero)
-#define LEDC_CHANNEL_0     0
+#define LEDC_CHANNEL_0 0
 
 // use 13 bit precission for LEDC timer
-#define LEDC_TIMER_13_BIT  13
+#define LEDC_TIMER_13_BIT 13
 
 // use 5000 Hz as a LEDC base frequency
-#define LEDC_BASE_FREQ     5000
+#define LEDC_BASE_FREQ 5000
 
 // fade LED PIN (replace with LED_BUILTIN constant for built-in LED)
-#define LED_PIN            12
-
-// Distance Sensor PIN
-//#define PWM_PIN            22
+#define LED_PIN 12
 
 bool inProgress = false;
 bool backwardsOn = false;
@@ -87,7 +89,7 @@ BLECharacteristic *pCharacteristic;
 BLEDescriptor *pDescriptor;
 bool deviceConnected = false;
 bool deviceNotifying = false;
-bool bluetoothAdvertising = false;
+bool bluetoothAdvertising = true;
 String notification;
 uint8_t value = 0;
 
@@ -118,22 +120,23 @@ void startLedBlink() {
 // direction f (forward) or b (backward).
 // duration in miliseconds, if duration = 0 it will run until a stop command is send.  
 
-void setMotors(String command) {
+void setMotors(String command) {    
     bool motorStarted = false;
     int index = command.indexOf('-');
     int secondIndex = command.indexOf('-', index + 1);
-  
+
+    char firstChar = command.charAt(0);
     int motorNumber = atoi(command.substring(0, index).c_str());
     String motorDirection = command.substring(index + 1, secondIndex);
     long duration = atoi(command.substring(secondIndex + 1).c_str()); 
-  
-    if (motorNumber < numMotors) {  
+    
+    if (motorNumber < numMotors && isDigit(firstChar)) {  
       if (motorDirection == "s"){   
         motor[motorNumber].run (BRAKE);
         if (motorsRunning > 0) {
           motorsRunning = motorsRunning - 1;
         }
-        sendBTNotification("stop:" + String(motorNumber));
+        sendNotification("stop:" + String(motorNumber));
         if (debug) {
             Serial.printf("Motor %d stopped\n", motorNumber);
         }
@@ -146,7 +149,7 @@ void setMotors(String command) {
                   motor[motorNumber].run (FORWARD | RELEASE);
                   motorStarted = true;
               } else {
-                  sendBTNotification("noGlass");
+                  sendNotification("noGlass");
                   if (debug) {
                       Serial.println("Glass not ready");
                   }
@@ -157,14 +160,14 @@ void setMotors(String command) {
           }
           if (motorStarted) {
               if (motorsRunning == 0) {
-                  sendBTNotification("start");
+                  sendNotification("start");
               }
               motorsRunning += 1; 
               if (duration > 0) {
                 unsigned long currentMillis = millis();
                 timeToCompletion[motorNumber] = duration + currentMillis; 
               }
-              sendBTNotification("start:" + String(motorNumber)); 
+              sendNotification("start:" + String(motorNumber)); 
               if (debug) {
                   Serial.printf("Motor %d started\n", motorNumber);
               }
@@ -174,7 +177,7 @@ void setMotors(String command) {
             motorsQueue.push(command);
         }
     } else {
-       sendBTNotification("noMotorNum");
+       sendNotification("noMotorNum");
        if (debug) {
           Serial.println("The motor number doesn't exist");
        }
@@ -188,43 +191,24 @@ class MyServerCallbacks: public BLEServerCallbacks {
 
     void onDisconnect(BLEServer* pServer) {
       if (debug) {
-          Serial.print("Device disconnected");
+          Serial.println("Device disconnected");
       }
       deviceConnected = false;
       deviceNotifying = false;
-      bluetoothAdvertising = true;
+      bluetoothAdvertising = false;
     }
 };
 
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string rxValue = pCharacteristic->getValue();
-
-      if (rxValue.length() > 0) {
-        notification = "";
-        for (int i = 0; i < rxValue.length(); i++) {
-          notification = notification + rxValue[i];
+        std::string rxValue = pCharacteristic->getValue();
+        if (rxValue.length() > 0) {
+            notification = "";
+            for (int i = 0; i < rxValue.length(); i++) {
+                notification = notification + rxValue[i];
+            }
+            processNotification(notification);
         }
-        if (debug) {
-          Serial.print("Received Value: ");
-          Serial.print(notification);
-          Serial.println();
-        }
-        if (notification == "lockOn") {
-          inProgress = true;
-        } else if (notification == "backwardsOn"){
-          backwardsOn = true;
-        } else {
-          if (inProgress == false) {
-            setMotors(notification);
-          } else {
-            sendBTNotification("lockOn");
-            if (debug) {
-              Serial.println("Lock is on!");
-            } 
-          }
-        }
-      }
     }
 };
 
@@ -248,6 +232,74 @@ class MyDisCallbacks: public BLEDescriptorCallbacks {
     }
 };
 
+void processNotification(String notification) {
+  if (debug) {
+    Serial.print("Received Value: ");
+    Serial.print(notification);
+    Serial.println();
+  }
+
+  int numOfCommands = 1;
+  // Check if there is more than 1 command and it ends on "lockOn"
+  int lastIndex = notification.lastIndexOf('-');  
+  String lastCommand = notification.substring(lastIndex + 1, notification.length());
+  if (notification != "lockOn" && lastCommand == "lockOn") {
+    if (inProgress == false) {
+      int charCount = 0;
+      int firstChar = 0;
+      int lastChar = 0;
+      for (int i=0; i <= notification.length(); i++) {
+        if (notification[i] == '-') { 
+          charCount++; 
+          if (charCount % 3 == 0) {
+            lastChar = i;
+            setMotors(notification.substring(firstChar, lastChar));
+            firstChar = lastChar + 1;
+          }
+        }
+      }  
+      inProgress = true;
+    } else {
+      sendNotification("lockOn");
+      if (debug) {
+        Serial.println("Lock is on!");
+      } 
+    }
+  } else if (notification == "firmwareVersion") {
+    sendNotification(firmwareVersion);
+  } else if (notification == "lockOn"){
+    inProgress = true;
+  } else if (notification == "backwardsOn"){
+    backwardsOn = true;
+  } else if (notification == "reverseMotorsOn"){
+    reverseMotors = true;
+  } else if (notification == "reverseMotorsOff"){
+    reverseMotors = false;    
+  } else if (notification == "distanceSentorOn"){
+    distanceSentor = true;
+  } else if (notification == "distanceSentorOff"){
+    distanceSentor = false;
+  } else {
+    if (inProgress == false) {
+      setMotors(notification);
+    } else {
+      sendNotification("lockOn");
+      if (debug) {
+        Serial.println("Lock is on!");
+      } 
+    }
+  }  
+}
+
+void sendNotification(String message) {
+    if (deviceConnected && deviceNotifying) {
+        sendBTNotification(message);
+    }
+    if (serialConnectionEnable) {
+        Serial.println(message);
+    }
+}
+
 void setup() {
   // Ref: http://esp32.info/docs/esp_idf/html/db/da4/task_8h.html#a25b035ac6b7809ff16c828be270e1431
   xTaskCreatePinnedToCore(
@@ -258,26 +310,43 @@ void setup() {
      1,                      /* uxPriority */
      &TaskA,                 /* pxCreatedTask */
      0);                     /* xCoreID */
-   
+
+
+  Serial.begin(115200);
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  } 
+  
   if (debug) {
-    Serial.begin(115200);
-    // wait until serial port opens for native USB devices
-    while (! Serial) {
-      delay(1);
-    }
+    Serial.println("MyBar v1.93 - Clockwise wires");
   }
-  
-  Serial.println("MyBar v1.91 - Clockwise wires");
-  
-  motor[0].initialize(32, 33);
-  motor[1].initialize(25, 26);
-  motor[2].initialize(27, 14);
-  motor[3].initialize(13, 23);
-  motor[4].initialize(21, 3);
-  motor[5].initialize(19, 18);
-  motor[6].initialize( 5, 17);
-  motor[7].initialize(16, 4);
-  motor[8].initialize(15, 2);
+
+  if (!reverseMotors) {
+    motor[0].initialize(32, 33);
+    motor[1].initialize(25, 26);
+    motor[2].initialize(27, 14);
+    motor[3].initialize(13, 23);
+    if (!serialConnectionEnable) {
+      motor[4].initialize(21, 3);
+    }
+    motor[5].initialize(19, 18);
+    motor[6].initialize( 5, 17);
+    motor[7].initialize(16, 4);
+    motor[8].initialize(15, 2);
+  } else {
+    motor[0].initialize(33, 32);
+    motor[1].initialize(26, 25);
+    motor[2].initialize(14, 27);
+    motor[3].initialize(23, 13);
+    if (!serialConnectionEnable) {
+      motor[4].initialize(3, 21);
+    }
+    motor[5].initialize(18, 19);
+    motor[6].initialize(17, 5);
+    motor[7].initialize(4, 16);
+    motor[8].initialize(2, 15);
+  }
 
   ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
   ledcAttachPin(LED_PIN, LEDC_CHANNEL_0);
@@ -288,50 +357,56 @@ void setup() {
   }
   
   // engage the motor's brake
-  for (int i = 0; i <= numMotors; ++i) {
+  for (int i = 0; i <= numMotors - 1; ++i) {
+    if (!serialConnectionEnable || (serialConnectionEnable && i != 4)) {
       motor[i].run (BRAKE);
+    }
   }
+
+  if (bluetooth) {
+    // Create the BLE Device
+    BLEDevice::init("MyBar");
+
+    // Create the BLE Server
+    BLEServer *pServer = BLEDevice::createServer();
+    pServer->setCallbacks(new MyServerCallbacks());
   
-  // Create the BLE Device
-  BLEDevice::init("MyBar");
-
-  // Create the BLE Server
-  BLEServer *pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
-
-  // Create the BLE Service
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-
-  // Create a BLE Characteristic
-  pCharacteristic = pService->createCharacteristic(
-                      CHARACTERISTIC_UUID_TX,
-                      BLECharacteristic::PROPERTY_NOTIFY                
-                    );
-
-  pDescriptor = new BLE2902();
-  pCharacteristic->addDescriptor(pDescriptor);
-
-  BLECharacteristic *pCharacteristic = pService->createCharacteristic(
-                                         CHARACTERISTIC_UUID_RX,
-                                         BLECharacteristic::PROPERTY_WRITE
-                                       );
-
-  pCharacteristic->setCallbacks(new MyCallbacks());
-  pDescriptor->setCallbacks(new MyDisCallbacks());
-
-  // Start the service
-  pService->start();
-
-  // Start advertising
-  pServer->getAdvertising()->start();
-  if (debug) {
-    Serial.println("Waiting a client connection to notify...");
-  }  
+    // Create the BLE Service
+    BLEService *pService = pServer->createService(SERVICE_UUID);
+  
+    // Create a BLE Characteristic
+    pCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_UUID_TX,
+                        BLECharacteristic::PROPERTY_NOTIFY                
+                      );
+  
+    pDescriptor = new BLE2902();
+    pCharacteristic->addDescriptor(pDescriptor);
+  
+    BLECharacteristic *pCharacteristic = pService->createCharacteristic(
+                                           CHARACTERISTIC_UUID_RX,
+                                           BLECharacteristic::PROPERTY_WRITE
+                                         );
+  
+    pCharacteristic->setCallbacks(new MyCallbacks());
+    pDescriptor->setCallbacks(new MyDisCallbacks());
+  
+    // Start the service
+    pService->start();
+  
+    // Start advertising
+    pServer->getAdvertising()->start();
+    if (debug) {
+      Serial.println("Waiting a client connection to notify...");
+    }  
+  }
 }
 
+// the loop function runs over and over again forever
 void loop() { 
   //glassDistance = pulseIn(PWM_PIN, HIGH);
-     
+  unsigned long currentMillis = millis();
+  
   if (debug && debugLoop) {
      Serial.printf("Motors running: %d\n", motorsRunning);
      if (distanceSentor) {
@@ -339,15 +414,18 @@ void loop() {
      }
   }
   
-  unsigned long currentMillis = millis();
-
+  if ( Serial.available() > 0) {
+    readValue = Serial.readStringUntil('\n');
+    processNotification(readValue);
+  } 
+  
   // disconnecting
-  if (!deviceConnected && !bluetoothAdvertising) {
+  if (!deviceConnected && !bluetoothAdvertising && bluetooth) {
       delay(50); // give the bluetooth stack the chance to get things ready
       pServer->startAdvertising(); // restart advertising
       bluetoothAdvertising = true;
-      if (debug && debugLoop) {
-          Serial.println("start advertising");
+      if (debug) {
+          Serial.println("Start advertising");
       }
   }
 
@@ -374,7 +452,7 @@ void loop() {
           timeToCompletion[i] = 0;
         }
         motorsRunning = 0;
-        sendBTNotification("motorsStp");
+        sendNotification("motorsStp");
       }
       while (!motorsQueue.isEmpty())
         motorsQueue.pop();
@@ -405,12 +483,12 @@ void loop() {
     if (ledOn or (motorsRunning > 0)) turnLedOff = true;    
   }
 
-  if (inProgress && motorsRunning <= 0) {
+  if (motorsRunning <= 0) {
     inProgress = false;
     backwardsOn = false;
   }
 
-  if (inProgress && motorsRunning != 0) { 
+  if (motorsRunning != 0) { 
     // Stop motors as time is up
     for (int thisMotor = 0; thisMotor < numMotors; thisMotor++) {
       bool lastMotor = false;
@@ -423,16 +501,17 @@ void loop() {
           }
         }  
         timeToCompletion[thisMotor] = 0; 
-        sendBTNotification("stop:" + String(thisMotor));
+        sendNotification("stop:" + String(thisMotor));
         if (debug) {
           Serial.printf("Motor %d stopped\n", thisMotor);
         }
         if (lastMotor) {
+          sendNotification("finish");
           startLedBlink();
-          sendBTNotification("finish");
           if (debug) {
-            Serial.printf("All Motors stopped");
+            Serial.println("All Motors stopped");
           }
+          sendNotification("finish");
         }      
       }
     }
