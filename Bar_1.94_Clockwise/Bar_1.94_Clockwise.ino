@@ -21,11 +21,11 @@
 */
 
 String firmwareVersion = "1.94";
-const bool debug = true;
+const bool debug = false;
 const bool debugLoop = false;
 const bool bluetooth = true;
-const bool serialConnectionEnable = true;
-bool distanceSentor = false;
+const bool serialConnectionEnable = false;
+bool distanceSentor = true;
 bool reverseMotors = false;
 const int numMotors = 9;
 const int maxMotorsRunning = 4;
