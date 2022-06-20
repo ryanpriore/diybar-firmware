@@ -34,6 +34,9 @@ const int blinkTimes = 10; //Number if blinks if there is no glass
 int fadeAmount = 10;    // how many points to fade the LED by
 String readValue;
 
+#include "EEPROM.h"
+#define EEPROM_SIZE 2
+
 // use first channel of 16 channels (started from zero)
 #define LEDC_CHANNEL_0 0
 
@@ -267,18 +270,29 @@ void processNotification(String notification) {
     }
   } else if (notification == "firmwareVersion") {
     sendNotification(firmwareVersion);
+  } else if (notification == "settings") {
+    String settings = firmwareVersion;
+    settings += "-";
+    settings += distanceSentor ? "1" : "0";
+    settings += "-";
+    settings += reverseMotors ? "1" : "0";
+    sendNotification(settings);    
   } else if (notification == "lockOn"){
     inProgress = true;
   } else if (notification == "backwardsOn"){
     backwardsOn = true;
   } else if (notification == "reverseMotorsOn"){
     reverseMotors = true;
+    storeInEEPROM(1, 1);
   } else if (notification == "reverseMotorsOff"){
     reverseMotors = false;    
+    storeInEEPROM(1, 0);
   } else if (notification == "distanceSentorOn"){
     distanceSentor = true;
+    storeInEEPROM(0, 1);
   } else if (notification == "distanceSentorOff"){
     distanceSentor = false;
+    storeInEEPROM(0, 0);
   } else {
     if (inProgress == false) {
       setMotors(notification);
@@ -289,6 +303,11 @@ void processNotification(String notification) {
       } 
     }
   }  
+}
+
+void storeInEEPROM(int address, int value) {
+   EEPROM.write(address, value);
+   EEPROM.commit();  
 }
 
 void sendNotification(String message) {
@@ -319,7 +338,7 @@ void setup() {
   } 
   
   if (debug) {
-    Serial.println("MyBar v1.93 - Clockwise wires");
+    Serial.println("MyBar v" + firmwareVersion + " - Clockwise wires");
   }
 
   if (!reverseMotors) {
@@ -361,6 +380,34 @@ void setup() {
     if (!serialConnectionEnable || (serialConnectionEnable && i != 4)) {
       motor[i].run (BRAKE);
     }
+  }
+
+  while (!EEPROM.begin(EEPROM_SIZE)) {
+    delay(10);
+  }
+
+  // Restore options from EEPROM
+  uint16_t distanceSensorEEPPROM = byte(EEPROM.read(0));
+  uint16_t reverseMotorsEEPPROM = byte(EEPROM.read(1));
+  if (debug) {
+    Serial.println("EEPROM distanceSensor: " + String(distanceSensorEEPPROM));
+    Serial.println("EEPROM reverseMotors: " + String(reverseMotorsEEPPROM));
+  }
+  if (distanceSensorEEPPROM == 1) {
+    distanceSentor = true;
+  } else if (distanceSensorEEPPROM == 0) {
+    distanceSentor = false;
+  }
+  if (reverseMotorsEEPPROM == 1) {
+    reverseMotors = true;
+  } else if (distanceSensorEEPPROM == 0) {
+    reverseMotors = false;
+  }
+  if (debug) {
+    Serial.print("distanceSentor: ");
+    Serial.println( distanceSentor ? "true" : "false");
+    Serial.print("reverseMotors: ");
+    Serial.println( reverseMotors ? "true" : "false");
   }
 
   if (bluetooth) {
