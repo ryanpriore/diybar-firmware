@@ -25,7 +25,7 @@ const bool debug = false;
 const bool debugLoop = false;
 const bool bluetooth = true;
 const bool serialConnectionEnable = false;
-bool distanceSentor = true;
+bool distanceSensor = true;
 bool reverseMotors = false;
 const int numMotors = 9;
 const int maxMotorsRunning = 4;
@@ -148,7 +148,7 @@ void setMotors(String command) {
               motor[motorNumber].run (BACKWARD | RELEASE);
               motorStarted = true;
           } else {   
-              if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSentor) {
+              if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
                   motor[motorNumber].run (FORWARD | RELEASE);
                   motorStarted = true;
               } else {
@@ -286,6 +286,7 @@ void processNotification(String notification) {
     storeInEEPROM(1, 1);
   } else if (notification == "reverseMotorsOff"){
     reverseMotors = false;    
+<<<<<<< Updated upstream
     storeInEEPROM(1, 0);
   } else if (notification == "distanceSentorOn"){
     distanceSentor = true;
@@ -293,6 +294,12 @@ void processNotification(String notification) {
   } else if (notification == "distanceSentorOff"){
     distanceSentor = false;
     storeInEEPROM(0, 0);
+=======
+  } else if (notification == "distanceSensorOn"){
+    distanceSensor = true;
+  } else if (notification == "distanceSensorOff"){
+    distanceSensor = false;
+>>>>>>> Stashed changes
   } else {
     if (inProgress == false) {
       setMotors(notification);
@@ -456,7 +463,7 @@ void loop() {
   
   if (debug && debugLoop) {
      Serial.printf("Motors running: %d\n", motorsRunning);
-     if (distanceSentor) {
+     if (distanceSensor) {
         Serial.printf("Glass Distance: %d\n", glassDistance);
      }
   }
@@ -524,7 +531,7 @@ void loop() {
     delay(10);
   } 
 
-  if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSentor) {
+  if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
     if (!(ledOn)) turnLedOn = true;
   } else {
     if (ledOn or (motorsRunning > 0)) turnLedOff = true;    

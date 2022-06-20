@@ -25,7 +25,7 @@ const bool debug = false;
 const bool debugLoop = false;
 const bool bluetooth = true;
 const bool serialConnectionEnable = true;
-bool distanceSentor = true;
+bool distanceSensor = true;
 bool reverseMotors = false;
 const int numMotors = 9;
 const int maxMotorsRunning = 4;
@@ -148,7 +148,7 @@ void setMotors(String command) {
               motor[motorNumber].run (BACKWARD | RELEASE);
               motorStarted = true;
           } else {   
-              if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSentor) {
+              if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
                   motor[motorNumber].run (FORWARD | RELEASE);
                   motorStarted = true;
               } else {
@@ -273,7 +273,7 @@ void processNotification(String notification) {
   } else if (notification == "settings") {
     String settings = firmwareVersion;
     settings += "-";
-    settings += distanceSentor ? "1" : "0";
+    settings += distanceSensor ? "1" : "0";
     settings += "-";
     settings += reverseMotors ? "1" : "0";
     sendNotification(settings);    
@@ -287,11 +287,11 @@ void processNotification(String notification) {
   } else if (notification == "reverseMotorsOff"){
     reverseMotors = false;    
     storeInEEPROM(1, 0);
-  } else if (notification == "distanceSentorOn"){
-    distanceSentor = true;
+  } else if (notification == "distanceSensorOn"){
+    distanceSensor = true;
     storeInEEPROM(0, 1);
-  } else if (notification == "distanceSentorOff"){
-    distanceSentor = false;
+  } else if (notification == "distanceSensorOff"){
+    distanceSensor = false;
     storeInEEPROM(0, 0);
   } else {
     if (inProgress == false) {
@@ -390,9 +390,9 @@ void setup() {
     Serial.println("EEPROM reverseMotors: " + String(reverseMotorsEEPPROM));
   }
   if (distanceSensorEEPPROM == 1) {
-    distanceSentor = true;
+    distanceSensor = true;
   } else if (distanceSensorEEPPROM == 0) {
-    distanceSentor = false;
+    distanceSensor = false;
   }
   if (reverseMotorsEEPPROM == 1) {
     reverseMotors = true;
@@ -400,8 +400,8 @@ void setup() {
     reverseMotors = false;
   }
   if (debug) {
-    Serial.print("distanceSentor: ");
-    Serial.println( distanceSentor ? "true" : "false");
+    Serial.print("distanceSensor: ");
+    Serial.println( distanceSensor ? "true" : "false");
     Serial.print("reverseMotors: ");
     Serial.println( reverseMotors ? "true" : "false");
   }
@@ -452,7 +452,7 @@ void loop() {
   
   if (debug && debugLoop) {
      Serial.printf("Motors running: %d\n", motorsRunning);
-     if (distanceSentor) {
+     if (distanceSensor) {
         Serial.printf("Glass Distance: %d\n", glassDistance);
      }
   }
@@ -520,7 +520,7 @@ void loop() {
     delay(10);
   } 
 
-  if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSentor) {
+  if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
     if (!(ledOn)) turnLedOn = true;
   } else {
     if (ledOn or (motorsRunning > 0)) turnLedOff = true;    
