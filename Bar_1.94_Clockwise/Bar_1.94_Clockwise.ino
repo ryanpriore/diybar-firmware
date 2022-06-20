@@ -273,7 +273,7 @@ void processNotification(String notification) {
   } else if (notification == "settings") {
     String settings = firmwareVersion;
     settings += "-";
-    settings += distanceSentor ? "1" : "0";
+    settings += distanceSensor ? "1" : "0";
     settings += "-";
     settings += reverseMotors ? "1" : "0";
     sendNotification(settings);    
@@ -288,11 +288,11 @@ void processNotification(String notification) {
     reverseMotors = false;    
 <<<<<<< Updated upstream
     storeInEEPROM(1, 0);
-  } else if (notification == "distanceSentorOn"){
-    distanceSentor = true;
+  } else if (notification == "distanceSensorOn"){
+    distanceSensor = true;
     storeInEEPROM(0, 1);
-  } else if (notification == "distanceSentorOff"){
-    distanceSentor = false;
+  } else if (notification == "distanceSensorOff"){
+    distanceSensor = false;
     storeInEEPROM(0, 0);
 =======
   } else if (notification == "distanceSensorOn"){
@@ -401,9 +401,9 @@ void setup() {
     Serial.println("EEPROM reverseMotors: " + String(reverseMotorsEEPPROM));
   }
   if (distanceSensorEEPPROM == 1) {
-    distanceSentor = true;
+    distanceSensor = true;
   } else if (distanceSensorEEPPROM == 0) {
-    distanceSentor = false;
+    distanceSensor = false;
   }
   if (reverseMotorsEEPPROM == 1) {
     reverseMotors = true;
@@ -411,8 +411,8 @@ void setup() {
     reverseMotors = false;
   }
   if (debug) {
-    Serial.print("distanceSentor: ");
-    Serial.println( distanceSentor ? "true" : "false");
+    Serial.print("distanceSensor: ");
+    Serial.println( distanceSensor ? "true" : "false");
     Serial.print("reverseMotors: ");
     Serial.println( reverseMotors ? "true" : "false");
   }
