@@ -286,7 +286,6 @@ void processNotification(String notification) {
     storeInEEPROM(1, 1);
   } else if (notification == "reverseMotorsOff"){
     reverseMotors = false;    
-<<<<<<< Updated upstream
     storeInEEPROM(1, 0);
   } else if (notification == "distanceSensorOn"){
     distanceSensor = true;
@@ -294,12 +293,6 @@ void processNotification(String notification) {
   } else if (notification == "distanceSensorOff"){
     distanceSensor = false;
     storeInEEPROM(0, 0);
-=======
-  } else if (notification == "distanceSensorOn"){
-    distanceSensor = true;
-  } else if (notification == "distanceSensorOff"){
-    distanceSensor = false;
->>>>>>> Stashed changes
   } else {
     if (inProgress == false) {
       setMotors(notification);
