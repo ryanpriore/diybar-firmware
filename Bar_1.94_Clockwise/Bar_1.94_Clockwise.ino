@@ -20,7 +20,8 @@
    Included in the GitHub repository https://github.com/diybar/firmware/Libraries
 */
 
-String firmwareVersion = "1.94";
+const String firmwareVersion = "1.94";
+const double boardVersion = 1.91;
 const bool debug = false;
 const bool debugLoop = false;
 const bool bluetooth = true;
@@ -229,6 +230,7 @@ class MyDisCallbacks: public BLEDescriptorCallbacks {
       if (pDescriptor->getLength() > 0) {
         if (rxValue[0]==1) {
           deviceNotifying=true;
+          returnSettings(); 
           if (debug) {
             Serial.println("Notifications enabled");
           }
@@ -278,12 +280,7 @@ void processNotification(String notification) {
   } else if (notification == "firmwareVersion") {
     sendNotification(firmwareVersion);
   } else if (notification == "settings") {
-    String settings = firmwareVersion;
-    settings += "-";
-    settings += distanceSensor ? "1" : "0";
-    settings += "-";
-    settings += reverseMotors ? "1" : "0";
-    sendNotification(settings);    
+    returnSettings(); 
   } else if (notification == "lockOn"){
     inProgress = true;
   } else if (notification == "backwardsOn"){
@@ -315,6 +312,16 @@ void processNotification(String notification) {
 void storeInEEPROM(int address, int value) {
    EEPROM.write(address, value);
    EEPROM.commit();  
+}
+
+void returnSettings() {
+    String settings = "set:";
+    settings += firmwareVersion;
+    settings += "-";
+    settings += distanceSensor ? "1" : "0";
+    settings += "-";
+    settings += reverseMotors ? "1" : "0";
+    sendNotification(settings);
 }
 
 void sendNotification(String message) {
@@ -353,8 +360,14 @@ void setup() {
     motor[1].initialize(25, 26);
     motor[2].initialize(27, 14);
     motor[3].initialize(13, 23);
-    if (!serialConnectionEnable) {
-      motor[4].initialize(21, 3);
+    if (!serialConnectionEnable && boardVersion <= 1.91) {
+      if (boardVersion == 1.91) {
+        motor[4].initialize(21, 3);
+      } else {
+        motor[4].initialize(1, 3);
+      }
+    } else if (boardVersion > 1.91){
+      motor[4].initialize(21, 22);
     }
     motor[5].initialize(19, 18);
     motor[6].initialize( 5, 17);
@@ -365,8 +378,14 @@ void setup() {
     motor[1].initialize(26, 25);
     motor[2].initialize(14, 27);
     motor[3].initialize(23, 13);
-    if (!serialConnectionEnable) {
-      motor[4].initialize(3, 21);
+    if (!serialConnectionEnable && boardVersion <= 1.91) {
+      if (boardVersion == 1.91) {
+        motor[4].initialize(3, 21);
+      } else {
+        motor[4].initialize(3, 1);
+      }
+    } else if (boardVersion > 1.91){
+      motor[4].initialize(22, 21);
     }
     motor[5].initialize(18, 19);
     motor[6].initialize(17, 5);
@@ -454,6 +473,7 @@ void setup() {
       Serial.println("Waiting a client connection to notify...");
     }  
   }
+  returnSettings(); 
 }
 
 // the loop function runs over and over again forever
