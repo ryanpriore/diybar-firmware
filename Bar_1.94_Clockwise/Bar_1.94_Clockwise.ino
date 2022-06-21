@@ -21,10 +21,10 @@
 */
 
 String firmwareVersion = "1.94";
-const bool debug = false;
+const bool debug = true;
 const bool debugLoop = false;
 const bool bluetooth = true;
-const bool serialConnectionEnable = false;
+const bool serialConnectionEnable = true;
 bool distanceSensor = true;
 bool reverseMotors = false;
 const int numMotors = 9;
@@ -131,7 +131,14 @@ void setMotors(String command) {
     char firstChar = command.charAt(0);
     int motorNumber = atoi(command.substring(0, index).c_str());
     String motorDirection = command.substring(index + 1, secondIndex);
-    long duration = atoi(command.substring(secondIndex + 1).c_str()); 
+    long duration = secondIndex > 0 ? atoi(command.substring(secondIndex + 1).c_str()) : 0; 
+
+    if (debug) {
+      Serial.printf("Motor %d\n", motorNumber);
+      Serial.printf("Motor Direction %d\n", motorDirection);
+      Serial.printf("Second Index %d\n", secondIndex);
+      Serial.printf("Motor duration %d\n", duration);
+    }
     
     if (motorNumber < numMotors && isDigit(firstChar)) {  
       if (motorDirection == "s"){   
