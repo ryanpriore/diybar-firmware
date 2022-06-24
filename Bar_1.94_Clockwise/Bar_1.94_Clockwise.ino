@@ -36,7 +36,7 @@ int fadeAmount = 10;    // how many points to fade the LED by
 String readValue;
 
 #include "EEPROM.h"
-#define EEPROM_SIZE 2
+#define EEPROM_SIZE 4
 
 // use first channel of 16 channels (started from zero)
 #define LEDC_CHANNEL_0 0
@@ -286,18 +286,30 @@ void processNotification(String notification) {
     inProgress = true;
   } else if (notification == "backwardsOn"){
     backwardsOn = true;
+  } else if (notification == "distanceSensorOn"){
+    distanceSensor = true;
+    storeInEEPROM(0, 1);
+  } else if (notification == "distanceSensorOff"){
+    distanceSensor = false;
+    storeInEEPROM(0, 0);    
   } else if (notification == "reverseMotorsOn"){
     reverseMotors = true;
     storeInEEPROM(1, 1);
   } else if (notification == "reverseMotorsOff"){
     reverseMotors = false;    
     storeInEEPROM(1, 0);
-  } else if (notification == "distanceSensorOn"){
-    distanceSensor = true;
-    storeInEEPROM(0, 1);
-  } else if (notification == "distanceSensorOff"){
-    distanceSensor = false;
-    storeInEEPROM(0, 0);
+ } else if (notification == "bluetoothOn"){
+    bluetooth = true;
+    storeInEEPROM(2, 1);
+  } else if (notification == "bluetoothOff"){
+    bluetooth = false;    
+    storeInEEPROM(2, 0);
+  } else if (notification == "serialOn"){
+    serialConnectionEnable = true;
+    storeInEEPROM(3, 1);
+  } else if (notification == "serialOff"){
+    serialConnectionEnable = false;
+    storeInEEPROM(3, 0);
   } else {
     if (inProgress == false) {
       setMotors(notification);
@@ -322,6 +334,10 @@ void returnSettings() {
     settings += distanceSensor ? "1" : "0";
     settings += "-";
     settings += reverseMotors ? "1" : "0";
+    settings += "-";
+    settings += bluetooth ? "1" : "0";
+    settings += "-";
+    settings += serialConnectionEnable ? "1" : "0";    
     sendNotification(settings);
 }
 
@@ -416,9 +432,13 @@ void setup() {
   // Restore options from EEPROM
   uint16_t distanceSensorEEPPROM = byte(EEPROM.read(0));
   uint16_t reverseMotorsEEPPROM = byte(EEPROM.read(1));
+  uint16_t bluetoothEEPPROM = byte(EEPROM.read(2));
+  uint16_t serialEEPPROM = byte(EEPROM.read(3));
   if (debug) {
     Serial.println("EEPROM distanceSensor: " + String(distanceSensorEEPPROM));
     Serial.println("EEPROM reverseMotors: " + String(reverseMotorsEEPPROM));
+    Serial.println("EEPROM bluetooth: " + String(bluetoothEEPPROM));
+    Serial.println("EEPROM serial: " + String(serialEEPPROM));   
   }
   if (distanceSensorEEPPROM == 1) {
     distanceSensor = true;
@@ -430,11 +450,25 @@ void setup() {
   } else if (distanceSensorEEPPROM == 0) {
     reverseMotors = false;
   }
+  if (bluetoothEEPPROM == 1) {
+    bluetooth = true;
+  } else if (bluetoothEEPPROM == 0) {
+    bluetooth = false;
+  }
+  if (serialEEPPROM == 1) {
+    serialConnectionEnable = true;
+  } else if (serialEEPPROM == 0) {
+    serialConnectionEnable = false;
+  }
   if (debug) {
     Serial.print("distanceSensor: ");
     Serial.println( distanceSensor ? "true" : "false");
     Serial.print("reverseMotors: ");
     Serial.println( reverseMotors ? "true" : "false");
+    Serial.print("bluetooth: ");
+    Serial.println( bluetooth ? "true" : "false");
+    Serial.print("serialConnectionEnable: ");
+    Serial.println( serialConnectionEnable ? "true" : "false");
   }
 
   if (bluetooth) {
