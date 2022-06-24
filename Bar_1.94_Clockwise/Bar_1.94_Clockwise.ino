@@ -24,8 +24,8 @@ const String firmwareVersion = "1.94";
 const double boardVersion = 1.91;
 const bool debug = false;
 const bool debugLoop = false;
-const bool bluetooth = true;
-const bool serialConnectionEnable = false;
+bool bluetooth = true;
+bool serialConnectionEnable = false;
 bool distanceSensor = true;
 bool reverseMotors = false;
 const int numMotors = 9;
@@ -136,7 +136,7 @@ void setMotors(String command) {
 
     if (debug) {
       Serial.printf("Motor %d\n", motorNumber);
-      Serial.printf("Motor Direction %d\n", motorDirection);
+      Serial.printf("Motor Direction %s\n", motorDirection);
       Serial.printf("Second Index %d\n", secondIndex);
       Serial.printf("Motor duration %d\n", duration);
     }
@@ -155,6 +155,7 @@ void setMotors(String command) {
           if (motorDirection == "b") {
               motor[motorNumber].run (BACKWARD | RELEASE);
               motorStarted = true;
+              backwardsOn = true;  
           } else {   
               if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
                   motor[motorNumber].run (FORWARD | RELEASE);
@@ -488,7 +489,7 @@ void loop() {
      }
   }
   
-  if ( Serial.available() > 0) {
+  if (Serial.available() > 0) {
     readValue = Serial.readStringUntil('\n');
     processNotification(readValue);
   } 
@@ -518,7 +519,7 @@ void loop() {
     ledcAnalogWrite(LEDC_CHANNEL_0, 0);
     ledOn = false;
     turnLedOff = false;
-    if (!(backwardsOn)) {
+    if (!backwardsOn) {
       if (motorsRunning > 0) {
         // engage the motor's brake
         for (int i = 0; i < numMotors; ++i) {
@@ -554,15 +555,12 @@ void loop() {
   if ((glassDistance < minGlassDistance && glassDistance > 0) || !distanceSensor) {
     if (!(ledOn)) turnLedOn = true;
   } else {
-    if (ledOn or (motorsRunning > 0)) turnLedOff = true;    
+    if (ledOn) turnLedOff = true;    
   }
 
   if (motorsRunning <= 0) {
     inProgress = false;
-    backwardsOn = false;
-  }
-
-  if (motorsRunning != 0) { 
+  } else { 
     // Stop motors as time is up
     for (int thisMotor = 0; thisMotor < numMotors; thisMotor++) {
       bool lastMotor = false;
@@ -570,8 +568,8 @@ void loop() {
         motor[thisMotor].run (BRAKE);
         if (motorsRunning > 0) {
           motorsRunning = motorsRunning - 1;
-          if (motorsRunning == 0) {
-            lastMotor = true;
+          if (motorsRunning <= 0) {
+            lastMotor = true; 
           }
         }  
         timeToCompletion[thisMotor] = 0; 
@@ -580,6 +578,8 @@ void loop() {
           Serial.printf("Motor %d stopped\n", thisMotor);
         }
         if (lastMotor) {
+          inProgress = false;
+          backwardsOn = false; 
           sendNotification("finish");
           startLedBlink();
           if (debug) {
