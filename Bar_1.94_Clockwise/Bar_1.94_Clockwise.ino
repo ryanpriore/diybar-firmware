@@ -327,8 +327,12 @@ void storeInEEPROM(int address, int value) {
    EEPROM.commit();  
 }
 
+// Return settings (Number of motors - Firmware Version - Distance Sensor - Reverse Motors - Bluetooth - Serial Connection)
+// 1 - Enable || 0 - Disable
 void returnSettings() {
     String settings = "set:";
+    settings += numMotors;
+    settings += "-";
     settings += firmwareVersion;
     settings += "-";
     settings += distanceSensor ? "1" : "0";
