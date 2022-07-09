@@ -102,8 +102,8 @@ void(* resetFunc) (void) = 0;
 
 void sendBTNotification(String message) {
     if (deviceConnected && deviceNotifying) {
-        char charBuf[10];
-        String(message).toCharArray(charBuf, 10);
+        char charBuf[20];
+        String(message).toCharArray(charBuf, 20);
         pCharacteristic->setValue(charBuf);
         pCharacteristic->notify();
     }
