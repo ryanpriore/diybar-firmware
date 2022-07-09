@@ -97,6 +97,9 @@ bool bluetoothAdvertising = true;
 String notification;
 uint8_t value = 0;
 
+// Reset board
+void(* resetFunc) (void) = 0;
+
 void sendBTNotification(String message) {
     if (deviceConnected && deviceNotifying) {
         char charBuf[10];
@@ -117,6 +120,46 @@ void startLedBlink() {
     brightness = 0;
     blinkedTimes = 0;
     ledBlink = true;
+}
+
+void initializeMotors() {
+  if (!reverseMotors) {
+    motor[0].initialize(32, 33);
+    motor[1].initialize(25, 26);
+    motor[2].initialize(27, 14);
+    motor[3].initialize(13, 23);
+    if (!serialConnectionEnable && boardVersion <= 1.91) {
+      if (boardVersion == 1.91) {
+        motor[4].initialize(21, 3);
+      } else {
+        motor[4].initialize(1, 3);
+      }
+    } else if (boardVersion > 1.91){
+      motor[4].initialize(21, 22);
+    }
+    motor[5].initialize(19, 18);
+    motor[6].initialize( 5, 17);
+    motor[7].initialize(16, 4);
+    motor[8].initialize(15, 2);
+  } else {
+    motor[0].initialize(33, 32);
+    motor[1].initialize(26, 25);
+    motor[2].initialize(14, 27);
+    motor[3].initialize(23, 13);
+    if (!serialConnectionEnable && boardVersion <= 1.91) {
+      if (boardVersion == 1.91) {
+        motor[4].initialize(3, 21);
+      } else {
+        motor[4].initialize(3, 1);
+      }
+    } else if (boardVersion > 1.91){
+      motor[4].initialize(22, 21);
+    }
+    motor[5].initialize(18, 19);
+    motor[6].initialize(17, 5);
+    motor[7].initialize(4, 16);
+    motor[8].initialize(2, 15);
+  }
 }
 
 // setMotors() Command String = motor_number-dirrection-duration 
@@ -295,9 +338,11 @@ void processNotification(String notification) {
   } else if (notification == "reverseMotorsOn"){
     reverseMotors = true;
     storeInEEPROM(1, 1);
+    initializeMotors();
   } else if (notification == "reverseMotorsOff"){
-    reverseMotors = false;    
+    reverseMotors = false;
     storeInEEPROM(1, 0);
+    initializeMotors();
  } else if (notification == "bluetoothOn"){
     bluetooth = true;
     storeInEEPROM(2, 1);
@@ -365,70 +410,6 @@ void setup() {
      &TaskA,                 /* pxCreatedTask */
      0);                     /* xCoreID */
 
-
-  Serial.begin(115200);
-  // wait until serial port opens for native USB devices
-  while (! Serial) {
-    delay(1);
-  } 
-  
-  if (debug) {
-    Serial.println("MyBar v" + firmwareVersion + " - Clockwise wires");
-  }
-
-  if (!reverseMotors) {
-    motor[0].initialize(32, 33);
-    motor[1].initialize(25, 26);
-    motor[2].initialize(27, 14);
-    motor[3].initialize(13, 23);
-    if (!serialConnectionEnable && boardVersion <= 1.91) {
-      if (boardVersion == 1.91) {
-        motor[4].initialize(21, 3);
-      } else {
-        motor[4].initialize(1, 3);
-      }
-    } else if (boardVersion > 1.91){
-      motor[4].initialize(21, 22);
-    }
-    motor[5].initialize(19, 18);
-    motor[6].initialize( 5, 17);
-    motor[7].initialize(16, 4);
-    motor[8].initialize(15, 2);
-  } else {
-    motor[0].initialize(33, 32);
-    motor[1].initialize(26, 25);
-    motor[2].initialize(14, 27);
-    motor[3].initialize(23, 13);
-    if (!serialConnectionEnable && boardVersion <= 1.91) {
-      if (boardVersion == 1.91) {
-        motor[4].initialize(3, 21);
-      } else {
-        motor[4].initialize(3, 1);
-      }
-    } else if (boardVersion > 1.91){
-      motor[4].initialize(22, 21);
-    }
-    motor[5].initialize(18, 19);
-    motor[6].initialize(17, 5);
-    motor[7].initialize(4, 16);
-    motor[8].initialize(2, 15);
-  }
-
-  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
-  ledcAttachPin(LED_PIN, LEDC_CHANNEL_0);
-
-  for (int bright = 255; bright >= 0; bright--) {
-      ledcAnalogWrite(LEDC_CHANNEL_0, bright);
-      delay(10);
-  }
-  
-  // engage the motor's brake
-  for (int i = 0; i <= numMotors - 1; ++i) {
-    if (!serialConnectionEnable || (serialConnectionEnable && i != 4)) {
-      motor[i].run (BRAKE);
-    }
-  }
-
   while (!EEPROM.begin(EEPROM_SIZE)) {
     delay(10);
   }
@@ -473,6 +454,33 @@ void setup() {
     Serial.println( bluetooth ? "true" : "false");
     Serial.print("serialConnectionEnable: ");
     Serial.println( serialConnectionEnable ? "true" : "false");
+  }
+
+  Serial.begin(115200);
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  } 
+  
+  if (debug) {
+    Serial.println("MyBar v" + firmwareVersion + " - Clockwise wires");
+  }
+
+  initializeMotors();
+
+  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
+  ledcAttachPin(LED_PIN, LEDC_CHANNEL_0);
+
+  for (int bright = 255; bright >= 0; bright--) {
+      ledcAnalogWrite(LEDC_CHANNEL_0, bright);
+      delay(10);
+  }
+  
+  // engage the motor's brake
+  for (int i = 0; i <= numMotors - 1; ++i) {
+    if (!serialConnectionEnable || (serialConnectionEnable && i != 4)) {
+      motor[i].run (BRAKE);
+    }
   }
 
   if (bluetooth) {
