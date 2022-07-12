@@ -102,8 +102,8 @@ void(* resetFunc) (void) = 0;
 
 void sendBTNotification(String message) {
     if (deviceConnected && deviceNotifying) {
-        char charBuf[20];
-        String(message).toCharArray(charBuf, 20);
+        char charBuf[22];
+        String(message).toCharArray(charBuf, 22);
         pCharacteristic->setValue(charBuf);
         pCharacteristic->notify();
     }
@@ -375,8 +375,10 @@ void storeInEEPROM(int address, int value) {
 // Return settings (Number of motors - Firmware Version - Distance Sensor - Reverse Motors - Bluetooth - Serial Connection)
 // 1 - Enable || 0 - Disable
 void returnSettings() {
-    String settings = "set:";
+    String settings = ":";
     settings += numMotors;
+    settings += "-";
+    settings += boardVersion;
     settings += "-";
     settings += firmwareVersion;
     settings += "-";
