@@ -22,8 +22,8 @@
 
 const String firmwareVersion = "1.94";
 const double boardVersion = 1.91;
-const bool debug = false;
-const bool debugLoop = false;
+bool debug = false;
+bool debugLoop = false;
 bool bluetooth = true;
 bool serialConnectionEnable = false;
 bool distanceSensor = true;
@@ -329,6 +329,17 @@ void processNotification(String notification) {
     inProgress = true;
   } else if (notification == "backwardsOn"){
     backwardsOn = true;
+  } else if (notification == "enableDebug"){
+    debug = true;
+    Serial.println("MyBar v" + firmwareVersion + " - Clockwise motors");
+  } else if (notification == "disableDebug"){
+    debug = false;
+  } else if (notification == "enableDebugLoop"){
+    debugLoop = true;
+  } else if (notification == "disableDebugLoop"){
+    debugLoop = false;        
+  } else if (notification == "backwardsOn"){
+    backwardsOn = true;
   } else if (notification == "distanceSensorOn"){
     distanceSensor = true;
     storeInEEPROM(0, 1);
@@ -412,6 +423,17 @@ void setup() {
      &TaskA,                 /* pxCreatedTask */
      0);                     /* xCoreID */
 
+
+  Serial.begin(115200);
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  } 
+  
+  if (debug) {
+    Serial.println("MyBar v" + firmwareVersion + " - Clockwise motors");
+  }
+  
   while (!EEPROM.begin(EEPROM_SIZE)) {
     delay(10);
   }
@@ -456,16 +478,6 @@ void setup() {
     Serial.println( bluetooth ? "true" : "false");
     Serial.print("serialConnectionEnable: ");
     Serial.println( serialConnectionEnable ? "true" : "false");
-  }
-
-  Serial.begin(115200);
-  // wait until serial port opens for native USB devices
-  while (! Serial) {
-    delay(1);
-  } 
-  
-  if (debug) {
-    Serial.println("MyBar v" + firmwareVersion + " - Clockwise wires");
   }
 
   initializeMotors();
