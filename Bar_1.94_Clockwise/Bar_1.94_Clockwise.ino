@@ -618,7 +618,7 @@ void loop() {
     if (ledOn) turnLedOff = true;    
   }
 
-  if (motorsRunning <= 0) {
+  if (motorsRunning <= 0 && motorsQueue.isEmpty()) {
     inProgress = false;
   } else { 
     // Stop motors as time is up
@@ -628,7 +628,7 @@ void loop() {
         motor[thisMotor].run (BRAKE);
         if (motorsRunning > 0) {
           motorsRunning = motorsRunning - 1;
-          if (motorsRunning <= 0) {
+          if (motorsRunning <= 0 && motorsQueue.isEmpty()) {
             lastMotor = true; 
           }
         }  
@@ -640,7 +640,6 @@ void loop() {
         if (lastMotor) {
           inProgress = false;
           backwardsOn = false; 
-          sendNotification("finish");
           startLedBlink();
           if (debug) {
             Serial.println("All Motors stopped");
