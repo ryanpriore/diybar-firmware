@@ -222,8 +222,8 @@ void setMotors(String command) {
                 unsigned long currentMillis = millis();
                 timeToCompletion[motorNumber] = duration + currentMillis; 
               }
-              sendNotification("start:" + String(motorNumber)); 
               if (debug) {
+                  sendNotification("start:" + String(motorNumber)); 
                   Serial.printf("Motor %d started\n", motorNumber);
               }
            }  
@@ -632,8 +632,8 @@ void loop() {
           }
         }  
         timeToCompletion[thisMotor] = 0; 
-        sendNotification("stop:" + String(thisMotor));
         if (debug) {
+          sendNotification("stop:" + String(thisMotor));
           Serial.printf("Motor %d stopped\n", thisMotor);
         }
         if (lastMotor && inProgress) {
