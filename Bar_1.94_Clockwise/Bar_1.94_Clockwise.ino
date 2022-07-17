@@ -214,7 +214,7 @@ void setMotors(String command) {
               } 
           }
           if (motorStarted) {
-              if (motorsRunning == 0) {
+              if (motorsRunning == 0 && motorsQueue.isEmpty() && debug) {
                   sendNotification("start");
               }
               motorsRunning += 1; 
