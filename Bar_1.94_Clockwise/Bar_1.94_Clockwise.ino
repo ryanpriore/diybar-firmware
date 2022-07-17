@@ -406,8 +406,7 @@ void returnSettings() {
 void sendNotification(String message) {
     if (deviceConnected && deviceNotifying) {
         sendBTNotification(message);
-    }
-    if (serialConnectionEnable) {
+    } else if (serialConnectionEnable) {
         Serial.println(message);
     }
 }
@@ -637,7 +636,7 @@ void loop() {
         if (debug) {
           Serial.printf("Motor %d stopped\n", thisMotor);
         }
-        if (lastMotor) {
+        if (lastMotor && inProgress) {
           inProgress = false;
           backwardsOn = false; 
           startLedBlink();
