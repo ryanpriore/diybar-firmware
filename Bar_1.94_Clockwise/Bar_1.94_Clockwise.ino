@@ -184,7 +184,7 @@ void setMotors(String command) {
       Serial.printf("Motor duration %d\n", duration);
     }
     
-    if (motorNumber < numMotors && isDigit(firstChar)) {  
+    if (motorNumber < numMotors && isDigit(firstChar) && !(serialConnectionEnable && boardVersion <= 1.91 && motorNumber == 4)) {  
       if (motorDirection == "s"){   
         motor[motorNumber].run (BRAKE);
         if (motorsRunning > 0) {
@@ -232,8 +232,8 @@ void setMotors(String command) {
             motorsQueue.push(command);
         }
     } else {
-       sendNotification("noMotorNum");
        if (debug) {
+          sendNotification("noMotorNum");
           Serial.println("The motor number doesn't exist");
        }
     }     
