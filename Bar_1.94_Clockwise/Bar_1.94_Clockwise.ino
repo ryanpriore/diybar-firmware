@@ -406,7 +406,8 @@ void returnSettings() {
 void sendNotification(String message) {
     if (deviceConnected && deviceNotifying) {
         sendBTNotification(message);
-    } else if (serialConnectionEnable) {
+    } 
+    if (serialConnectionEnable) {
         Serial.println(message);
     }
 }
@@ -643,6 +644,7 @@ void loop() {
           if (debug) {
             Serial.println("All Motors stopped");
           }
+          delay(50);
           sendNotification("finish");
         }      
       }
