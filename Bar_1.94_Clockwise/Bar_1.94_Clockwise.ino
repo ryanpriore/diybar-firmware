@@ -21,7 +21,7 @@
 */
 
 const String firmwareVersion = "1.94";
-const double boardVersion = 1.91;
+const double boardVersion = 1.92;
 bool debug = false;
 bool debugLoop = false;
 bool bluetooth = true;
@@ -413,6 +413,12 @@ void sendNotification(String message) {
 }
 
 void setup() {
+  // Distance Sensor PIN
+  int PWM_PIN = 22;
+  if (boardVersion > 1.91) {
+    PWM_PIN = 35;
+  }
+  
   // Ref: http://esp32.info/docs/esp_idf/html/db/da4/task_8h.html#a25b035ac6b7809ff16c828be270e1431
   xTaskCreatePinnedToCore(
      Task1,                  /* pvTaskCode */

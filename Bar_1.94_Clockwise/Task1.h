@@ -1,5 +1,3 @@
-// Distance Sensor PIN
-#define PWM_PIN 22
 int glassDistance = 0;
 int messurment = 0;
 int aux = 0;
