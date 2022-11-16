@@ -414,9 +414,8 @@ void sendNotification(String message) {
 
 void setup() {
   // Distance Sensor PIN
-  int PWM_PIN = 22;
-  if (boardVersion > 1.91) {
-    PWM_PIN = 35;
+  if (boardVersion < 1.92) {
+    PWM_PIN = 22;
   }
   
   // Ref: http://esp32.info/docs/esp_idf/html/db/da4/task_8h.html#a25b035ac6b7809ff16c828be270e1431

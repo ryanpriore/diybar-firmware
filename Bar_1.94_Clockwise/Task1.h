@@ -1,8 +1,8 @@
 int glassDistance = 0;
 int messurment = 0;
 int aux = 0;
-
-void workLoad (void) ;     
+int PWM_PIN = 35;
+void workLoad (void);     
 
 void Task1( void * parameter ) {
    // Everything defined on the setup
